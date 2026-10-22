@@ -54,8 +54,8 @@ riesgo 0,5 %/operación · pérdida diaria máx. 3 % · 1 posición abierta.
 | Sobreajuste | Validación fuera de muestra, simulación antes de real |
 
 ## Fases y criterio de aceptación
-1. **Diseño + esqueleto** – config valida y rechaza >2x (pruebas pasan). ← aquí
-2. **Datos solo lectura** – descarga velas/libro reales sin llaves; pruebas de calidad.
+1. **Diseño + esqueleto** – config valida y rechaza >2x (pruebas pasan). ✔
+2. **Datos solo lectura** – descarga velas/libro reales sin llaves; pruebas de calidad. ← aquí (falta verificación real en el PC)
 3. **Indicadores + estrategia** – señales reproducibles en pruebas.
 4. **Motor de riesgo** – rechaza todo lo que viole límites (pruebas).
 5. **Backtest** – resultados con comisiones; informe honesto.
@@ -63,3 +63,18 @@ riesgo 0,5 %/operación · pérdida diaria máx. 3 % · 1 posición abierta.
 7. **IA** – opinión y explicación, nunca ejecución directa.
 8. **Testnet** – órdenes reales en testnet.
 9. **Real con capital pequeño** – solo con tu aprobación explícita.
+
+## Fase 2 – datos solo lectura (detalle)
+Fuentes (documentación oficial USDⓈ-M, sin llaves):
+| Dato | REST (`https://fapi.binance.com`) | WebSocket (`wss://fstream.binance.com`) |
+|---|---|---|
+| Hora del servidor | `GET /fapi/v1/time` (peso 1) | – |
+| Velas | `GET /fapi/v1/klines` (peso 1–10 según `limit`) | `/market` · `<simbolo>@kline_1m` |
+| Libro | `GET /fapi/v1/depth` (peso 2 con `limit` ≤ 50) | `/public` · `<simbolo>@depth20@500ms` |
+| Mark price + funding | `GET /fapi/v1/premiumIndex` (peso 1 con `symbol`) | `/market` · `<simbolo>@markPrice@1s` |
+| Historial de funding | `GET /fapi/v1/fundingRate` (límite 500 / 5 min / IP) | – |
+
+- Peso: se lee `X-MBX-USED-WEIGHT-1M` y hay un tope propio de 600/min. Ante 429/418 el cliente se detiene y muestra `Retry-After`; no reintenta solo.
+- WebSocket: rutas `/market` y `/public` (las URL antiguas sin ruta dejaron de funcionar en 2026), reconexión con espera creciente (1→30 s), renovación antes de las 24 h.
+- Calidad (`src/futuros/quality`): datos viejos, huecos y duplicados en velas, OHLC incoherente, saltos y rangos anormales, libro vacío o cruzado, libro/mark/índice muy separados, reloj del PC desfasado, conexión caída o stream en silencio. Si algo falla → **NO APTO para operar**.
+- Guardado: `data/mercado.sqlite` (ignorado por git). Comando: `futuros-datos`.
