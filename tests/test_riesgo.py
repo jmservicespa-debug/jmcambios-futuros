@@ -84,7 +84,7 @@ def test_simbolo_o_direccion_no_permitidos():
 
 def test_limite_de_perdida_diaria_bloquea_entradas():
     d = motor().evaluar(LARGO, REGLAS, EstadoCuenta(D(485), pnl_dia_usdt=D(-15)))   # 3 % de 500 = 15
-    assert not d.aprobada and any("pérdida diaria" in x for x in d.rechazos)
+    assert not d.aprobada and len(d.rechazos) == 1 and "pérdida diaria" in d.rechazos[0]
 
 
 def test_riesgo_no_supera_lo_que_queda_del_dia():

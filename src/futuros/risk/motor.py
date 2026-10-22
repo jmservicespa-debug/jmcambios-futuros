@@ -143,8 +143,10 @@ class MotorRiesgo:
 
         # --- tamaño de la posición ---------------------------------------------------------------
         riesgo_max = min(capital * c.riesgo_por_operacion_pct / CIEN, limite_dia - perdida_dia)
+        if riesgo_max <= 0:          # ya se informó el límite diario; no hay riesgo disponible para calcular tamaño
+            return Decision(False, s.simbolo, rechazos=r)
         costo_unidad = (precio + stop) * self.comision          # comisión de entrada + salida en el stop
-        cant_riesgo = riesgo_max / (distancia + costo_unidad) if riesgo_max > 0 else Decimal(0)
+        cant_riesgo = riesgo_max / (distancia + costo_unidad)
         exposicion = min(self.apalancamiento_max, c.exposicion_max_pct / CIEN)
         nocional_libre = capital * exposicion - sum((p.nocional_usdt for p in cuenta.posiciones), Decimal(0))
         cant_exposicion = max(Decimal(0), nocional_libre) / precio
