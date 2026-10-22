@@ -9,3 +9,20 @@ riesgo_por_operacion_pct: 0.5   # % del capital arriesgado si salta el stop (con
 perdida_diaria_max_pct: 3.0     # al llegar, no hay entradas nuevas ese día
 exposicion_max_pct: 200         # nominal total / capital (≤ apalancamiento máximo)
 posiciones_abiertas_max: 1
+
+# Fase 3 – estrategia (solo propone señales; el motor de riesgo decide en la Fase 4).
+estrategia:
+  intervalo: 5m            # en 1m el movimiento típico casi no cubre las comisiones
+  ema_rapida: 9
+  ema_lenta: 21
+  atr_periodo: 14
+  vwap_periodo: 48         # 48 velas de 5m = 4 horas
+  vol_periodo: 20
+  vol_factor: 1.2          # volumen de la vela >= 1,2 × promedio
+  stop_atr: 1.5            # stop a 1,5 ATR del precio
+  objetivo_atr: 2.0        # objetivo a 2 ATR del precio
+  atr_min_pct: 0.08        # bajo esto el mercado está muy quieto
+  atr_max_pct: 1.5         # sobre esto está demasiado agitado
+  spread_max_pct: 0.05
+  comision_pct: 0.05       # por lado, referencia taker; verifica la tuya en Binance
+  costo_min_factor: 2      # el objetivo debe cubrir 2 × (comisión de entrada + salida)
