@@ -56,7 +56,7 @@ riesgo 0,5 %/operación · pérdida diaria máx. 3 % · 1 posición abierta.
 ## Fases y criterio de aceptación
 1. **Diseño + esqueleto** – config valida y rechaza >2x (pruebas pasan). ✔
 2. **Datos solo lectura** – descarga velas/libro reales sin llaves; pruebas de calidad. ✔ (verificada en el PC: 44 pruebas pasan; datos reales de BTCUSDT y ETHUSDT APTOS)
-3. **Indicadores + estrategia** – señales reproducibles en pruebas.
+3. **Indicadores + estrategia** – señales reproducibles en pruebas. ✔ (verificada en el PC: 70 pruebas pasan; futuros-senales funciona con datos reales)
 4. **Motor de riesgo** – rechaza todo lo que viole límites (pruebas).
 5. **Backtest** – resultados con comisiones; informe honesto.
 6. **Simulación en vivo (paper)** – mínimo 2 semanas.
@@ -78,3 +78,13 @@ Fuentes (documentación oficial USDⓈ-M, sin llaves):
 - WebSocket: rutas `/market` y `/public` (las URL antiguas sin ruta dejaron de funcionar en 2026), reconexión con espera creciente (1→30 s), renovación antes de las 24 h.
 - Calidad (`src/futuros/quality`): datos viejos, huecos y duplicados en velas, OHLC incoherente, saltos y rangos anormales, libro vacío o cruzado, libro/mark/índice muy separados, reloj del PC desfasado, conexión caída o stream en silencio. Si algo falla → **NO APTO para operar**.
 - Guardado: `data/mercado.sqlite` (ignorado por git). Comando: `futuros-datos`.
+
+## Fase 3 – indicadores y estrategia (detalle)
+- `features/indicadores.py`: EMA, ATR (Wilder), VWAP móvil y volumen promedio, todo en Decimal y solo sobre velas cerradas.
+- `strategy/cruce_ema.py`: la señal **LONG** sale cuando la EMA 9 cruza hacia arriba a la EMA 21, el cierre está sobre el VWAP y el volumen es al menos 1,2× el promedio. **SHORT** es lo mismo hacia abajo.
+  Filtros: datos APTOS, dirección permitida, ATR dentro de una banda, spread bajo y un objetivo que cubra 2× las comisiones de entrada y salida.
+  Stop a 1,5 ATR y objetivo a 2 ATR. Intervalo de 5m, porque en 1m el movimiento típico casi no cubre las comisiones.
+- Solo **propone**: no calcula tamaño ni apalancamiento y no envía nada. Eso es del motor de riesgo (Fase 4).
+- Parámetros editables en `config/default.yaml` → `estrategia:`. La comisión es una referencia: verifica la de tu cuenta.
+- Comando `futuros-senales`, que guarda las señales en `data/mercado.sqlite`, tabla `senales`.
+- Sin garantía de rentabilidad: estas reglas se pondrán a prueba con el backtest (Fase 5) antes de cualquier uso.

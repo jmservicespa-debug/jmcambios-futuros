@@ -26,6 +26,10 @@ CREATE TABLE IF NOT EXISTS mark_price (
     funding TEXT NOT NULL, proximo_funding_ms INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS calidad (
     simbolo TEXT NOT NULL, ts_ms INTEGER NOT NULL, apto INTEGER NOT NULL, motivos TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS senales (
+    simbolo TEXT NOT NULL, intervalo TEXT NOT NULL, vela_ms INTEGER NOT NULL, direccion TEXT NOT NULL,
+    precio_ref TEXT, stop TEXT, objetivo TEXT, motivos TEXT NOT NULL, indicadores TEXT NOT NULL,
+    PRIMARY KEY (simbolo, intervalo, vela_ms));
 CREATE INDEX IF NOT EXISTS idx_libros ON libros (simbolo, ts_ms);
 CREATE INDEX IF NOT EXISTS idx_mark ON mark_price (simbolo, ts_ms);
 """
@@ -68,8 +72,18 @@ class Almacen:
                         (simbolo, ts_ms, int(apto), json.dumps(motivos, ensure_ascii=False)))
         self.db.commit()
 
+    def guardar_senal(self, senal, intervalo: str) -> None:
+        """Una fila por (símbolo, intervalo, vela): repetir la misma vela no duplica."""
+        def txt(x):
+            return None if x is None else str(x)
+        self.db.execute("INSERT OR REPLACE INTO senales VALUES (?,?,?,?,?,?,?,?,?)",
+                        (senal.simbolo, intervalo, senal.vela_ms, senal.direccion, txt(senal.precio_ref),
+                         txt(senal.stop), txt(senal.objetivo), json.dumps(senal.motivos, ensure_ascii=False),
+                         json.dumps({k: txt(v) for k, v in senal.indicadores.items()})))
+        self.db.commit()
+
     def contar(self, tabla: str, simbolo: str | None = None) -> int:
-        if tabla not in ("velas", "libros", "mark_price", "calidad"):
+        if tabla not in ("velas", "libros", "mark_price", "calidad", "senales"):
             raise ValueError(tabla)
         if simbolo is None:
             return self.db.execute(f"SELECT COUNT(*) FROM {tabla}").fetchone()[0]
