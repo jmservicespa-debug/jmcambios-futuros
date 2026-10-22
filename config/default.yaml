@@ -1,0 +1,11 @@
+# Parámetros editables. Se validan contra config/limits.py antes de aceptarse.
+capital_referencia_usdt: 500
+objetivo_neto_por_operacion_usdt: 1.50
+apalancamiento_max: 2
+mercados: [BTCUSDT, ETHUSDT]
+direcciones: [LONG, SHORT]
+modo: simulacion            # simulacion | testnet | real (real exige aprobación explícita en la Fase 10)
+riesgo_por_operacion_pct: 0.5   # % del capital arriesgado si salta el stop (conservador; se justificará con pruebas)
+perdida_diaria_max_pct: 3.0     # al llegar, no hay entradas nuevas ese día
+exposicion_max_pct: 200         # nominal total / capital (≤ apalancamiento máximo)
+posiciones_abiertas_max: 1
