@@ -55,7 +55,7 @@ riesgo 0,5 %/operación · pérdida diaria máx. 3 % · 1 posición abierta.
 
 ## Fases y criterio de aceptación
 1. **Diseño + esqueleto** – config valida y rechaza >2x (pruebas pasan). ✔
-2. **Datos solo lectura** – descarga velas/libro reales sin llaves; pruebas de calidad. ← aquí (falta verificación real en el PC)
+2. **Datos solo lectura** – descarga velas/libro reales sin llaves; pruebas de calidad. ✔ (verificada en el PC: 44 pruebas pasan; datos reales de BTCUSDT y ETHUSDT APTOS)
 3. **Indicadores + estrategia** – señales reproducibles en pruebas.
 4. **Motor de riesgo** – rechaza todo lo que viole límites (pruebas).
 5. **Backtest** – resultados con comisiones; informe honesto.
