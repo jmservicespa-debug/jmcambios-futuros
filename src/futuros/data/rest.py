@@ -15,7 +15,7 @@ from decimal import Decimal
 import httpx
 
 from futuros.data import endpoints as ep
-from futuros.data.modelos import Funding, Libro, MarkPrice, Vela
+from futuros.data.modelos import Funding, Libro, MarkPrice, ReglasSimbolo, Vela
 
 TOPE_PESO_POR_MINUTO = 600   # propio y conservador; Binance permite bastante más por IP
 _SIMBOLO = re.compile(r"^[A-Z0-9]{5,20}$")
@@ -130,3 +130,22 @@ class ClienteREST:
             raise ValueError("limit debe estar entre 1 y 1000")
         datos = self._get(ep.FUNDING, {"symbol": simbolo, "limit": limit}, 1)
         return [Funding(simbolo, int(f["fundingTime"]), Decimal(f["fundingRate"])) for f in datos]
+
+    def reglas(self, simbolos: list[str]) -> dict[str, ReglasSimbolo]:
+        """Reglas de cada símbolo pedido. Una sola llamada para todos (se usa al arrancar, no en cada vela)."""
+        pedidos = {validar_simbolo(s) for s in simbolos}
+        d = self._get(ep.REGLAS, {}, ep.PESO_REGLAS)
+        out: dict[str, ReglasSimbolo] = {}
+        for info in d["symbols"]:
+            if info["symbol"] not in pedidos:
+                continue
+            f = {x["filterType"]: x for x in info["filters"]}
+            lotes = [f[k] for k in ("LOT_SIZE", "MARKET_LOT_SIZE") if k in f]   # se toma lo más estricto
+            out[info["symbol"]] = ReglasSimbolo(
+                info["symbol"], Decimal(f["PRICE_FILTER"]["tickSize"]),
+                max(Decimal(x["stepSize"]) for x in lotes), max(Decimal(x["minQty"]) for x in lotes),
+                min(Decimal(x["maxQty"]) for x in lotes), Decimal(f["MIN_NOTIONAL"]["notional"]))
+        faltan = pedidos - out.keys()
+        if faltan:
+            raise ErrorDatos(f"Binance no informó reglas para: {', '.join(sorted(faltan))}")
+        return out

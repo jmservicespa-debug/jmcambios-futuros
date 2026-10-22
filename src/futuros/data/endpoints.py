@@ -17,6 +17,8 @@ VELAS = "/fapi/v1/klines"               # velas, peso según limit
 LIBRO = "/fapi/v1/depth"                # libro de órdenes, peso según limit
 MARK_PRICE = "/fapi/v1/premiumIndex"    # mark price + último funding, peso 1 con symbol
 FUNDING = "/fapi/v1/fundingRate"        # historial de funding (límite propio 500 / 5 min / IP)
+REGLAS = "/fapi/v1/exchangeInfo"        # reglas de cada símbolo (tick, step, mínimos)
+PESO_REGLAS = 20                        # peso no confirmado en la doc de futuros: se usa un valor conservador
 
 # WebSocket: desde 2026 Binance exige rutas separadas por tipo de dato.
 #   /public -> datos de alta frecuencia (libro)

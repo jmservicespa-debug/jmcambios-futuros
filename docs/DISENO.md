@@ -57,7 +57,7 @@ riesgo 0,5 %/operación · pérdida diaria máx. 3 % · 1 posición abierta.
 1. **Diseño + esqueleto** – config valida y rechaza >2x (pruebas pasan). ✔
 2. **Datos solo lectura** – descarga velas/libro reales sin llaves; pruebas de calidad. ✔ (verificada en el PC: 44 pruebas pasan; datos reales de BTCUSDT y ETHUSDT APTOS)
 3. **Indicadores + estrategia** – señales reproducibles en pruebas. ✔ (verificada en el PC: 70 pruebas pasan; futuros-senales funciona con datos reales)
-4. **Motor de riesgo** – rechaza todo lo que viole límites (pruebas).
+4. **Motor de riesgo** – rechaza todo lo que viole límites (pruebas). ← aquí (falta verificación en el PC)
 5. **Backtest** – resultados con comisiones; informe honesto.
 6. **Simulación en vivo (paper)** – mínimo 2 semanas.
 7. **IA** – opinión y explicación, nunca ejecución directa.
@@ -88,3 +88,15 @@ Fuentes (documentación oficial USDⓈ-M, sin llaves):
 - Parámetros editables en `config/default.yaml` → `estrategia:`. La comisión es una referencia: verifica la de tu cuenta.
 - Comando `futuros-senales`, que guarda las señales en `data/mercado.sqlite`, tabla `senales`.
 - Sin garantía de rentabilidad: estas reglas se pondrán a prueba con el backtest (Fase 5) antes de cualquier uso.
+
+## Fase 4 – motor de riesgo (detalle)
+- `risk/motor.py`: `MotorRiesgo.evaluar(señal, reglas, cuenta)` → `Decision` (aprobada + `OrdenPropuesta`, o la lista de **todos** los rechazos). No envía nada.
+- Revisa: 2x rígido (también si la config se salta la validación), modo real bloqueado, datos APTOS, símbolo/dirección, stop obligatorio y del lado correcto,
+  pérdida diaria (bloquea al llegar al máximo y limita el riesgo a lo que queda del día), máximo de posiciones, sin promediar,
+  tamaño por riesgo con comisiones incluidas, exposición total, reglas del exchange (`/fapi/v1/exchangeInfo`: tick, paso, mínimos),
+  distancia a liquidación y ganancia neta ≥ objetivo neto.
+- Sin martingala: la base del riesgo es el menor entre capital de referencia y capital actual; tras pérdidas el tamaño baja, tras ganancias no sube.
+- `config/` ahora se instala como paquete, así los comandos de consola leen `config/limits.py` (antes solo funcionaba dentro de pytest).
+- Comando `futuros-riesgo` (cuenta simulada). `--ejemplo` agrega señales hipotéticas y `--pnl-dia -15` simula una pérdida del día.
+- Hallazgo: con 500 USDT, 2x y la volatilidad de octubre de 2026, un objetivo de 2 ATR en BTC deja ~0,46 USDT netos (las comisiones taker cuestan ~1 USDT por operación),
+  menos que el objetivo de 1,50, y el motor rechaza. Se analizará con el backtest (Fase 5); los parámetros los decide el usuario.

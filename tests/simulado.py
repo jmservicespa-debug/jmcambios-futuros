@@ -103,3 +103,18 @@ class ConexionFalsa:
             raise self.cortar_con
         while self.quedarse_abierta:
             await asyncio.sleep(0.01)
+
+
+def exchange_info():
+    """Formato de /fapi/v1/exchangeInfo (recortado a lo que se usa)."""
+    def simbolo(s, tick, paso_lote, paso_mercado, nocional):
+        return {"symbol": s, "filters": [
+            {"filterType": "PRICE_FILTER", "minPrice": "0.1", "maxPrice": "1000000", "tickSize": tick},
+            {"filterType": "LOT_SIZE", "stepSize": paso_lote, "maxQty": "1000", "minQty": paso_lote},
+            {"filterType": "MARKET_LOT_SIZE", "stepSize": paso_mercado, "maxQty": "120", "minQty": paso_mercado},
+            {"filterType": "MAX_NUM_ORDERS", "limit": 200},
+            {"filterType": "MIN_NOTIONAL", "notional": nocional}]}
+    return {"timezone": "UTC", "serverTime": AHORA_MS, "rateLimits": [], "symbols": [
+        simbolo("BTCUSDT", "0.10", "0.001", "0.001", "100"),
+        simbolo("ETHUSDT", "0.01", "0.001", "0.010", "20"),
+        simbolo("XRPUSDT", "0.0001", "0.1", "0.1", "5")]}

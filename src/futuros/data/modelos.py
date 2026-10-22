@@ -57,3 +57,14 @@ class Funding:
     simbolo: str
     ts_ms: int
     tasa: Decimal
+
+
+@dataclass(frozen=True)
+class ReglasSimbolo:
+    """Reglas del exchange para un símbolo (de /fapi/v1/exchangeInfo)."""
+    simbolo: str
+    tick_precio: Decimal         # PRICE_FILTER.tickSize
+    paso_cantidad: Decimal       # LOT_SIZE / MARKET_LOT_SIZE, el más estricto
+    cantidad_min: Decimal
+    cantidad_max: Decimal
+    nocional_min: Decimal        # MIN_NOTIONAL.notional
