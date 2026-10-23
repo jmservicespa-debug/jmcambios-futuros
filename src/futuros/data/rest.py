@@ -98,13 +98,20 @@ class ClienteREST:
     def hora_servidor_ms(self) -> int:
         return int(self._get(ep.TIEMPO, {}, 1)["serverTime"])
 
-    def velas(self, simbolo: str, intervalo: str = "1m", limit: int = 100) -> list[Vela]:
+    def velas(self, simbolo: str, intervalo: str = "1m", limit: int = 100,
+              inicio_ms: int | None = None, fin_ms: int | None = None) -> list[Vela]:
+        """Velas en orden de la más antigua a la más nueva. Sin inicio/fin: las más recientes."""
         simbolo = validar_simbolo(simbolo)
         if intervalo not in ep.INTERVALOS_MS:
             raise ValueError(f"intervalo no soportado: {intervalo}")
         if not 1 <= limit <= ep.VELAS_LIMITE_MAX:
             raise ValueError(f"limit debe estar entre 1 y {ep.VELAS_LIMITE_MAX}")
-        datos = self._get(ep.VELAS, {"symbol": simbolo, "interval": intervalo, "limit": limit}, ep.peso_velas(limit))
+        params = {"symbol": simbolo, "interval": intervalo, "limit": limit}
+        if inicio_ms is not None:
+            params["startTime"] = int(inicio_ms)
+        if fin_ms is not None:
+            params["endTime"] = int(fin_ms)
+        datos = self._get(ep.VELAS, params, ep.peso_velas(limit))
         ahora = int(self._reloj() * 1000)
         return [Vela(simbolo, intervalo, int(k[0]), int(k[6]), Decimal(k[1]), Decimal(k[2]), Decimal(k[3]),
                      Decimal(k[4]), Decimal(k[5]), cerrada=int(k[6]) < ahora) for k in datos]

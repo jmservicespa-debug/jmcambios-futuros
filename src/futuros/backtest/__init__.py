@@ -1,1 +1,1 @@
-"""Módulo del agente (se completa en su fase)."""
+"""Backtest: datos históricos, simulación con comisiones y deslizamiento, informe honesto."""

@@ -9,6 +9,8 @@ import json
 import sqlite3
 from pathlib import Path
 
+from decimal import Decimal
+
 from futuros.data.modelos import Libro, MarkPrice, Vela
 
 RUTA_POR_DEFECTO = Path("data") / "mercado.sqlite"
@@ -81,6 +83,19 @@ class Almacen:
                          txt(senal.stop), txt(senal.objetivo), json.dumps(senal.motivos, ensure_ascii=False),
                          json.dumps({k: txt(v) for k, v in senal.indicadores.items()})))
         self.db.commit()
+
+    def leer_velas(self, simbolo: str, intervalo: str, desde_ms: int = 0, hasta_ms: int | None = None,
+                   solo_cerradas: bool = True) -> list[Vela]:
+        sql = "SELECT * FROM velas WHERE simbolo=? AND intervalo=? AND apertura_ms>=?"
+        args: list = [simbolo, intervalo, desde_ms]
+        if hasta_ms is not None:
+            sql += " AND apertura_ms<=?"
+            args.append(hasta_ms)
+        if solo_cerradas:
+            sql += " AND cerrada=1"
+        filas = self.db.execute(sql + " ORDER BY apertura_ms", args).fetchall()
+        return [Vela(f[0], f[1], f[2], f[3], Decimal(f[4]), Decimal(f[5]), Decimal(f[6]), Decimal(f[7]),
+                     Decimal(f[8]), bool(f[9])) for f in filas]
 
     def contar(self, tabla: str, simbolo: str | None = None) -> int:
         if tabla not in ("velas", "libros", "mark_price", "calidad", "senales"):

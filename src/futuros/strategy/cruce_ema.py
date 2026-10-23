@@ -88,8 +88,10 @@ def evaluar(simbolo: str, velas: list[Vela], cfg: EstrategiaConfig = EstrategiaC
 
     cierres = [v.cierre for v in cerradas]
     rapida, lenta = ema(cierres, cfg.ema_rapida), ema(cierres, cfg.ema_lenta)
-    a, vw, vp = atr(cerradas, cfg.atr_periodo)[-1], vwap(cerradas, cfg.vwap_periodo)[-1], \
-        volumen_promedio(cerradas, cfg.vol_periodo)[-1]
+    # Solo se usa el último valor: se pasan solo las velas necesarias (mismo resultado, mucho más rápido).
+    a = atr(cerradas, cfg.atr_periodo)[-1]
+    vw = vwap(cerradas[-cfg.vwap_periodo:], cfg.vwap_periodo)[-1]
+    vp = volumen_promedio(cerradas[-(cfg.vol_periodo + 1):], cfg.vol_periodo)[-1]
     ultima = cerradas[-1]
     precio = ultima.cierre
     ind = {"ema_rapida": rapida[-1], "ema_lenta": lenta[-1], "atr": a, "vwap": vw, "volumen": ultima.volumen,

@@ -9,6 +9,8 @@ dependencies = ["pydantic>=2.6", "pyyaml>=6", "httpx>=0.27", "websockets>=13"]
 futuros-datos = "futuros.data.cli:main"
 futuros-senales = "futuros.strategy.cli:main"
 futuros-riesgo = "futuros.risk.cli:main"
+futuros-historico = "futuros.backtest.cli:main_historico"
+futuros-backtest = "futuros.backtest.cli:main_backtest"
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]

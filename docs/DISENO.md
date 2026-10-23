@@ -58,7 +58,7 @@ riesgo 0,5 %/operación · pérdida diaria máx. 3 % · 1 posición abierta.
 2. **Datos solo lectura** – descarga velas/libro reales sin llaves; pruebas de calidad. ✔ (verificada en el PC: 44 pruebas pasan; datos reales de BTCUSDT y ETHUSDT APTOS)
 3. **Indicadores + estrategia** – señales reproducibles en pruebas. ✔ (verificada en el PC: 70 pruebas pasan; futuros-senales funciona con datos reales)
 4. **Motor de riesgo** – rechaza todo lo que viole límites (pruebas). ✔ (verificada en el PC: 94 pruebas pasan; freno de pérdida diaria y reglas reales de Binance comprobados)
-5. **Backtest** – resultados con comisiones; informe honesto.
+5. **Backtest** – resultados con comisiones; informe honesto. ← aquí (falta correrlo con datos reales en el PC)
 6. **Simulación en vivo (paper)** – mínimo 2 semanas.
 7. **IA** – opinión y explicación, nunca ejecución directa.
 8. **Testnet** – órdenes reales en testnet.
@@ -100,3 +100,18 @@ Fuentes (documentación oficial USDⓈ-M, sin llaves):
 - Comando `futuros-riesgo` (cuenta simulada). `--ejemplo` agrega señales hipotéticas y `--pnl-dia -15` simula una pérdida del día.
 - Hallazgo: con 500 USDT, 2x y la volatilidad de octubre de 2026, un objetivo de 2 ATR en BTC deja ~0,46 USDT netos (las comisiones taker cuestan ~1 USDT por operación),
   menos que el objetivo de 1,50, y el motor rechaza. Se analizará con el backtest (Fase 5); los parámetros los decide el usuario.
+
+## Fase 5 – backtest (detalle)
+- `futuros-historico --dias 90`: descarga velas con `/fapi/v1/klines` y `startTime`, en bloques de 1000 (peso 5).
+  Pausa si se acaba nuestro tope de peso, se detiene ante 429/418 y retoma donde quedó. También informa los huecos.
+- `futuros-backtest`: la estrategia propone y el **motor de riesgo decide**, con el mismo código que en vivo. Luego se simula vela por vela.
+  - Entrada en la apertura siguiente con deslizamiento en contra; comisión taker en la entrada y en la salida.
+  - Si una vela toca el stop y el objetivo, se asume stop. Si el precio salta el stop, se sale en la apertura.
+  - Las ventanas con huecos se tratan como NO APTAS.
+  - Una sola posición a la vez; la pérdida diaria se reinicia a las 00:00 UTC.
+- Informe en `reports/` (ignorado por git):
+  - neto, comisiones, acierto, factor de beneficio, caída máxima, peor racha y motivos de rechazo;
+  - el primer tramo (70 %) comparado con el tramo final (30 %), para detectar resultados que no se sostienen;
+  - un aviso si hay menos de 30 operaciones.
+- `--objetivo-neto` y `--comision` sirven para simulaciones "¿y si...?" y NO modifican `config/default.yaml`.
+- Limitaciones: no se aplica el filtro de spread (no hay libro histórico) ni se cobra funding.
