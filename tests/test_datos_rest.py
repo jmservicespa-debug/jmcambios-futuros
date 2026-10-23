@@ -78,3 +78,19 @@ def test_parametros_invalidos_no_llegan_a_binance(llamada):
         with pytest.raises(ValueError):
             llamada(c)
     assert reg == []
+
+
+def test_reglas_del_exchange_toma_lo_mas_estricto():
+    from simulado import exchange_info
+    reg = []
+    c = ClienteREST(transport=transporte(reg, ajustes={"/fapi/v1/exchangeInfo": exchange_info()}),
+                    reloj=lambda: AHORA_MS / 1000)
+    r = c.reglas(["BTCUSDT", "ETHUSDT"])
+    assert set(r) == {"BTCUSDT", "ETHUSDT"} and len(reg) == 1 and reg[0].url.path == "/fapi/v1/exchangeInfo"
+    assert r["BTCUSDT"].tick_precio == Decimal("0.10") and r["BTCUSDT"].nocional_min == Decimal("100")
+    eth = r["ETHUSDT"]
+    assert eth.paso_cantidad == Decimal("0.010") and eth.cantidad_min == Decimal("0.010")   # MARKET_LOT_SIZE
+    assert eth.cantidad_max == Decimal("120")
+    from futuros.data.rest import ErrorDatos
+    with pytest.raises(ErrorDatos):
+        c.reglas(["SOLUSDT"])

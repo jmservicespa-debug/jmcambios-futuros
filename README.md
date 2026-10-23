@@ -1,6 +1,6 @@
 # jmcambios-futuros
 
-Agente de trading de futuros (Binance USDⓈ-M) **en construcción**. Hoy: Fase 3 (indicadores y señales de estrategia; sin llaves ni órdenes).
+Agente de trading de futuros (Binance USDⓈ-M) **en construcción**. Hoy: Fase 4 (motor de riesgo sobre cuenta simulada; sin llaves ni órdenes).
 Arranca en modo simulación; apalancamiento máximo 2x fijo. Ver `docs/DISENO.md`.
 
 ```bash
@@ -14,5 +14,6 @@ Ver datos reales (Windows / PowerShell):
 futuros-datos               # REST + 60 s de WebSocket, BTCUSDT y ETHUSDT
 futuros-datos --solo-rest   # solo la descarga inicial
 futuros-senales             # señales de la estrategia (solo para estudiar)
+futuros-riesgo --ejemplo    # decisiones del motor de riesgo (cuenta simulada)
 $env:FUTUROS_PRUEBA_REAL = "1"; pytest -q -m red   # prueba real opcional
 ```
