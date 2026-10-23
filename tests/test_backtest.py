@@ -140,7 +140,13 @@ def test_informe_avisa_muestra_chica_y_comisiones():
     r = correr_eth(planas(6) + [v(6, h="2045"), v(7)], long_en(5))
     t = informe.texto(r, ["ETHUSDT"], "5m", ["supuesto de prueba"])
     assert "No garantiza resultados futuros" in t and "muy poca muestra" in t
-    assert "Las comisiones se llevaron" in t and "Primer tramo" in t and "Tramo final" in t
+    assert "Sin comisiones el resultado habría sido" in t and "Primer tramo" in t and "Tramo final" in t
+    assert "no tiene ventaja" not in t                       # aquí la ganancia bruta sí cubre las comisiones
+
+
+def test_informe_avisa_cuando_la_senal_no_cubre_comisiones():
+    r = correr_eth(planas(6) + [v(6, l="1975"), v(7)], long_en(5))      # solo una pérdida
+    assert "no tiene ventaja suficiente" in informe.texto(r, ["ETHUSDT"], "5m", ["x"])
 
 
 def test_stop_paga_taker_en_la_salida():

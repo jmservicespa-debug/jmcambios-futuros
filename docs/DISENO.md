@@ -58,7 +58,7 @@ riesgo 0,5 %/operación · pérdida diaria máx. 3 % · 1 posición abierta.
 2. **Datos solo lectura** – descarga velas/libro reales sin llaves; pruebas de calidad. ✔ (verificada en el PC: 44 pruebas pasan; datos reales de BTCUSDT y ETHUSDT APTOS)
 3. **Indicadores + estrategia** – señales reproducibles en pruebas. ✔ (verificada en el PC: 70 pruebas pasan; futuros-senales funciona con datos reales)
 4. **Motor de riesgo** – rechaza todo lo que viole límites (pruebas). ✔ (verificada en el PC: 94 pruebas pasan; freno de pérdida diaria y reglas reales de Binance comprobados)
-5. **Backtest** – resultados con comisiones; informe honesto. ← aquí (falta correrlo con datos reales en el PC)
+5. **Backtest** – resultados con comisiones; informe honesto. ✔ (corrido en el PC con 90 días reales: la estrategia de cruce de EMAs NO tiene ventaja; ver abajo)
 6. **Simulación en vivo (paper)** – mínimo 2 semanas.
 7. **IA** – opinión y explicación, nunca ejecución directa.
 8. **Testnet** – órdenes reales en testnet.
@@ -125,3 +125,13 @@ Fuentes (documentación oficial USDⓈ-M, sin llaves):
   - en velas de 5m (ATR ~60, objetivo 0,15 %) la operación deja 0,76 neto y se **rechaza**;
   - en velas de 15m (ATR ~110, objetivo 0,27 %) deja ~1,63 neto con ~2,46 de pérdida máxima.
 - Con stop a 1,5 ATR y objetivo a 2 ATR, hay que acertar ~55–60 % solo para empatar. El backtest compara opciones con `--intervalo 15m` y `--objetivo-atr 3`.
+
+### Resultado del backtest real (PC del usuario, 2026-07-25 a 2026-10-23, BTCUSDT + ETHUSDT)
+| Variante | Operaciones | Acierto | Necesario para empatar | Bruto | Comisiones | Neto |
+|---|---|---|---|---|---|---|
+| 15m, objetivo 2 ATR | 206 | 46,6 % | 55,7 % | +2,77 | 80,96 | **−78,19 (−15,6 %)** |
+| 15m, objetivo 3 ATR | 195 | 36,4 % | 44,5 % | −0,43 | 82,67 | **−83,10 (−16,6 %)** |
+
+Los dos tramos dan lo mismo (es consistente, no es mala suerte). **Antes de comisiones la estrategia queda en ~0, o sea, la señal no predice nada**.
+Mover el objetivo de ganancia no lo arregla. Conclusión: **no se pasa a la Fase 6 con esta estrategia**; primero hay que encontrar una señal con ventaja bruta
+positiva en ambos tramos y con más historia.

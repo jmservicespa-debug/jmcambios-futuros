@@ -98,8 +98,12 @@ def texto(res: ResultadoBacktest, simbolos: list[str], intervalo: str, notas: li
     l += _bloque("Total", total)
     l += _bloque(f"Primer tramo (hasta {_fecha(corte)})", calcular(a, res.capital_inicial))
     l += _bloque(f"Tramo final (desde {_fecha(corte)}) – revisa si se parece al primero", calcular(b, res.capital_inicial))
-    if total.operaciones and total.bruto > 0 and total.comisiones > 0:
-        l.append(f"Las comisiones se llevaron el {total.comisiones / total.bruto * CIEN:.0f} % del resultado bruto.")
+    if total.operaciones:
+        l.append(f"Sin comisiones el resultado habría sido {total.bruto:+.2f} USDT; las comisiones "
+                 f"({total.comisiones:.2f} USDT) lo dejan en {total.neto:+.2f} USDT.")
+        if total.bruto <= total.comisiones:
+            l.append("⚠️ Lo que gana la estrategia ANTES de comisiones no alcanza a pagarlas: "
+                     "la señal no tiene ventaja suficiente con estos parámetros.")
         l.append("")
     if total.operaciones < 30:
         l.append(f"⚠️ Solo {total.operaciones} operaciones: es muy poca muestra para sacar conclusiones.")
