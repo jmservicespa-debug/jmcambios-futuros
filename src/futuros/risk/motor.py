@@ -61,7 +61,7 @@ class OrdenPropuesta:
     nocional_usdt: Decimal
     margen_usdt: Decimal
     perdida_max_usdt: Decimal    # si salta el stop, incluidas comisiones estimadas
-    comisiones_usdt: Decimal     # entrada + salida en el objetivo
+    comisiones_usdt: Decimal     # entrada (taker) + salida en el objetivo (maker)
     ganancia_neta_usdt: Decimal  # en el objetivo, después de comisiones
 
 
@@ -80,9 +80,12 @@ def _redondear(valor: Decimal, paso: Decimal, modo) -> Decimal:
 
 
 class MotorRiesgo:
-    def __init__(self, cfg: Config, comision_pct: Decimal):
+    def __init__(self, cfg: Config, comision_pct: Decimal, comision_maker_pct: Decimal | None = None):
+        """comision_pct: taker (entrada y stop). comision_maker_pct: salida en el objetivo con orden límite
+        (si no se indica, se asume taker también: lo más conservador)."""
         self.cfg = cfg
         self.comision = Decimal(comision_pct) / CIEN
+        self.comision_maker = Decimal(comision_maker_pct if comision_maker_pct is not None else comision_pct) / CIEN
         # Doble seguro: aunque alguien construya la config saltándose la validación, el 2x no se mueve.
         self.apalancamiento_max = min(Decimal(cfg.apalancamiento_max), limits.APALANCAMIENTO_MAX)
 
@@ -166,7 +169,7 @@ class MotorRiesgo:
             r.append(f"stop demasiado lejos ({distancia / precio * CIEN:.2f} %): muy cerca de la zona de liquidación")
 
         perdida_max = cantidad * (distancia + costo_unidad)
-        comisiones = cantidad * (precio + objetivo) * self.comision
+        comisiones = cantidad * (precio * self.comision + objetivo * self.comision_maker)
         neta = cantidad * abs(objetivo - precio) - comisiones
         if neta < c.objetivo_neto_por_operacion_usdt:
             r.append(f"ganancia neta estimada {neta:.2f} USDT (después de {comisiones:.2f} USDT de comisiones) "

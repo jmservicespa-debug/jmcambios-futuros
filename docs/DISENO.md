@@ -41,7 +41,7 @@ datos (REST/WebSocket solo lectura) → calidad de datos → indicadores (featur
 Python 3.12 · pydantic + YAML · httpx + websockets · pandas/NumPy · SQLite→Postgres · FastAPI · Claude API (JSON schema) · pytest.
 
 ## Configuración inicial (`config/default.yaml`, editable)
-Capital de referencia 500 USDT · objetivo neto 1,50 USDT/operación · 2x máx. · BTCUSDT, ETHUSDT · LONG y SHORT ·
+Capital de referencia 500 USDT · objetivo neto 1,00 USDT/operación (ajustado en la Fase 5 por comisiones) · 2x máx. · BTCUSDT, ETHUSDT · LONG y SHORT ·
 riesgo 0,5 %/operación · pérdida diaria máx. 3 % · 1 posición abierta.
 
 ## Riesgos principales
@@ -115,3 +115,13 @@ Fuentes (documentación oficial USDⓈ-M, sin llaves):
   - un aviso si hay menos de 30 operaciones.
 - `--objetivo-neto` y `--comision` sirven para simulaciones "¿y si...?" y NO modifican `config/default.yaml`.
 - Limitaciones: no se aplica el filtro de spread (no hay libro histórico) ni se cobra funding.
+
+### Ajuste de comisiones y objetivo (Fase 5)
+- El objetivo se cobra con orden límite (maker 0,02 %); la entrada y el stop van a mercado (taker 0,05 %). Son valores de referencia del nivel normal: verificar los de la cuenta.
+  En la Fase 8, el objetivo debe enviarse como orden LÍMITE *reduce-only* (no como TAKE_PROFIT a mercado) para que pague maker.
+- Con 1.000 USDT de nocional (500 × 2x), una operación ganadora cuesta ~0,70 USDT y una perdedora ~1,00 USDT, más deslizamiento.
+- Objetivo neto mínimo: **1,00 USDT**, y el objetivo de precio ≥ 3 × (0,05 + 0,02) % = **0,21 %** (comisiones ≤ 1/3 de lo bruto).
+- Cálculo con BTC a 81.300:
+  - en velas de 5m (ATR ~60, objetivo 0,15 %) la operación deja 0,76 neto y se **rechaza**;
+  - en velas de 15m (ATR ~110, objetivo 0,27 %) deja ~1,63 neto con ~2,46 de pérdida máxima.
+- Con stop a 1,5 ATR y objetivo a 2 ATR, hay que acertar ~55–60 % solo para empatar. El backtest compara opciones con `--intervalo 15m` y `--objetivo-atr 3`.

@@ -66,7 +66,7 @@ def main(argv: list[str] | None = None, cliente: ClienteREST | None = None) -> i
         if hasattr(flujo, "reconfigure"):
             flujo.reconfigure(errors="replace")
 
-    motor = MotorRiesgo(cfg, est_cfg.comision_pct)
+    motor = MotorRiesgo(cfg, est_cfg.comision_pct, est_cfg.comision_maker_pct)
     cuenta = EstadoCuenta(cfg.capital_referencia_usdt, pnl)
     print("=== JM Cambios Futuros - Fase 4: motor de riesgo ===")
     print("Cuenta SIMULADA. NO se envía ninguna orden y NO es una recomendación de inversión.")

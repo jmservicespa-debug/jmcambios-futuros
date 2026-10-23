@@ -10,7 +10,8 @@ Reglas (sobre la última vela CERRADA):
          y el volumen supera `vol_factor` veces el promedio.
 - SHORT: lo mismo hacia abajo y con el cierre bajo el VWAP.
 - Filtros: datos APTOS, dirección permitida, ATR dentro de la banda, spread bajo
-           y objetivo suficiente para cubrir las comisiones de entrada y salida.
+           y objetivo de al menos `costo_min_factor` veces la comisión de entrada (taker) + salida en el
+           objetivo (maker, orden límite); con 3, las comisiones son como máximo un tercio de la ganancia bruta.
 - Stop = precio ∓ stop_atr × ATR · Objetivo = precio ± objetivo_atr × ATR.
 """
 from __future__ import annotations
@@ -41,8 +42,9 @@ class EstrategiaConfig(BaseModel):
     atr_min_pct: Decimal = Field(Decimal("0.08"), ge=0)
     atr_max_pct: Decimal = Field(Decimal("1.5"), gt=0)
     spread_max_pct: Decimal = Field(Decimal("0.05"), gt=0)
-    comision_pct: Decimal = Field(Decimal("0.05"), ge=0)   # por lado (taker); verificar en tu cuenta
-    costo_min_factor: Decimal = Field(Decimal("2"), ge=1)  # objetivo >= factor × costo ida y vuelta
+    comision_pct: Decimal = Field(Decimal("0.05"), ge=0)        # taker (a mercado): entrada y stop
+    comision_maker_pct: Decimal = Field(Decimal("0.02"), ge=0)  # maker (límite): salida en el objetivo
+    costo_min_factor: Decimal = Field(Decimal("3"), ge=1)       # objetivo >= factor × costo de una operación ganadora
 
     @model_validator(mode="after")
     def _coherencia(self) -> "EstrategiaConfig":
@@ -132,10 +134,10 @@ def evaluar(simbolo: str, velas: list[Vela], cfg: EstrategiaConfig = EstrategiaC
     elif atr_pct > cfg.atr_max_pct:
         rechazos.append(f"mercado muy agitado: ATR {atr_pct:.3f} % > {cfg.atr_max_pct} %")
     objetivo_pct = atr_pct * cfg.objetivo_atr
-    costo_pct = cfg.comision_pct * 2
+    costo_pct = cfg.comision_pct + cfg.comision_maker_pct
     if objetivo_pct < costo_pct * cfg.costo_min_factor:
         rechazos.append(f"objetivo {objetivo_pct:.3f} % no cubre {cfg.costo_min_factor}× las comisiones "
-                        f"de ida y vuelta ({costo_pct} %)")
+                        f"de entrada y salida ({costo_pct} %)")
     if libro is not None:
         if libro.mejor_bid is None or libro.mejor_ask is None:
             rechazos.append("libro sin precios")

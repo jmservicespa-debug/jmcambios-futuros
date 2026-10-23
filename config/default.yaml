@@ -1,6 +1,6 @@
 # Parámetros editables. Se validan contra config/limits.py antes de aceptarse.
 capital_referencia_usdt: 500
-objetivo_neto_por_operacion_usdt: 1.50
+objetivo_neto_por_operacion_usdt: 1.00   # ganancia mínima DESPUÉS de comisiones para aceptar una operación
 apalancamiento_max: 2
 mercados: [BTCUSDT, ETHUSDT]
 direcciones: [LONG, SHORT]
@@ -24,5 +24,6 @@ estrategia:
   atr_min_pct: 0.08        # bajo esto el mercado está muy quieto
   atr_max_pct: 1.5         # sobre esto está demasiado agitado
   spread_max_pct: 0.05
-  comision_pct: 0.05       # por lado, referencia taker; verifica la tuya en Binance
-  costo_min_factor: 2      # el objetivo debe cubrir 2 × (comisión de entrada + salida)
+  comision_pct: 0.05       # taker (a mercado): entrada y stop. Referencia nivel normal; verifica la tuya
+  comision_maker_pct: 0.02 # maker (orden límite): salida en el objetivo
+  costo_min_factor: 3      # el objetivo debe ser >= 3 × (0,05 + 0,02) % = 0,21 %: comisiones <= 1/3 de lo bruto

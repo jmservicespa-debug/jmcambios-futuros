@@ -138,3 +138,11 @@ def test_redondeo_conservador_al_tick():
 @pytest.mark.parametrize("senal", [LARGO, CORTO])
 def test_misma_entrada_misma_decision(senal):
     assert motor().evaluar(senal, REGLAS, CUENTA) == motor().evaluar(senal, REGLAS, CUENTA)
+
+
+def test_salida_maker_en_el_objetivo_baja_las_comisiones():
+    taker = motor().evaluar(LARGO, REGLAS, CUENTA).orden
+    maker = MotorRiesgo(Config(**BASE), D("0.05"), D("0.02")).evaluar(LARGO, REGLAS, CUENTA).orden
+    assert maker.cantidad == taker.cantidad and maker.perdida_max_usdt == taker.perdida_max_usdt   # el stop sigue taker
+    assert maker.comisiones_usdt == D("0.113") * (D("2000") * D("0.0005") + D("2040") * D("0.0002"))
+    assert maker.ganancia_neta_usdt > taker.ganancia_neta_usdt

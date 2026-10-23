@@ -23,6 +23,7 @@ class Metricas:
     caida_max_usdt: Decimal
     caida_max_pct: Decimal
     peor_racha: int                      # operaciones perdedoras seguidas
+    acierto_para_empatar_pct: Decimal | None   # pérdida media / (ganancia media + pérdida media)
 
 
 def calcular(ops: list[Operacion], capital_inicial: Decimal) -> Metricas:
@@ -46,7 +47,15 @@ def calcular(ops: list[Operacion], capital_inicial: Decimal) -> Metricas:
         bruto=sum((o.bruto for o in ops), cero), comisiones=sum((o.comisiones for o in ops), cero), neto=neto,
         promedio_neto=neto / n if n else cero,
         factor_beneficio=(sum(gan, cero) / -sum(per, cero)) if per and sum(per, cero) < 0 else None,
-        caida_max_usdt=caida, caida_max_pct=caida_pct, peor_racha=peor)
+        caida_max_usdt=caida, caida_max_pct=caida_pct, peor_racha=peor,
+        acierto_para_empatar_pct=_empate(gan, per))
+
+
+def _empate(gan: list[Decimal], per: list[Decimal]) -> Decimal | None:
+    if not gan or not per:
+        return None
+    media_g, media_p = sum(gan) / len(gan), -sum(per) / len(per)
+    return media_p / (media_g + media_p) * CIEN if media_g + media_p > 0 else None
 
 
 def dividir(res: ResultadoBacktest, fraccion: Decimal = Decimal("0.7")) -> tuple[list[Operacion], list[Operacion], int]:
@@ -61,12 +70,15 @@ def _fecha(ms: int) -> str:
 
 def _bloque(titulo: str, m: Metricas) -> list[str]:
     fb = f"{m.factor_beneficio:.2f}" if m.factor_beneficio is not None else "sin pérdidas"
-    return [f"### {titulo}",
+    r = [f"### {titulo}",
             f"- Operaciones: {m.operaciones} (ganadoras {m.ganadoras}, {m.tasa_acierto_pct:.1f} %)",
             f"- Resultado bruto: {m.bruto:.2f} USDT | comisiones: {m.comisiones:.2f} USDT | **neto: {m.neto:.2f} USDT**",
             f"- Promedio neto por operación: {m.promedio_neto:.2f} USDT | factor de beneficio: {fb}",
-            f"- Caída máxima: {m.caida_max_usdt:.2f} USDT ({m.caida_max_pct:.2f} %) | peor racha perdedora: {m.peor_racha}",
-            ""]
+            f"- Caída máxima: {m.caida_max_usdt:.2f} USDT ({m.caida_max_pct:.2f} %) | peor racha perdedora: {m.peor_racha}"]
+    if m.acierto_para_empatar_pct is not None:
+        r.append(f"- Con estas ganancias y pérdidas medias, hay que acertar el {m.acierto_para_empatar_pct:.1f} % "
+                 f"solo para empatar (se acertó el {m.tasa_acierto_pct:.1f} %)")
+    return r + [""]
 
 
 def texto(res: ResultadoBacktest, simbolos: list[str], intervalo: str, notas: list[str]) -> str:

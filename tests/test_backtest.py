@@ -46,7 +46,7 @@ def test_gana_en_el_objetivo_con_comisiones_y_deslizamiento_exactos():
     entrada = D("2000") * D("1.0002")                       # apertura siguiente + 0,02 % en contra
     assert o.motivo_salida == "objetivo" and o.precio_entrada == entrada and o.cantidad == D("0.113")
     assert o.bruto == (D("2040") - entrada) * D("0.113")
-    assert o.comisiones == D("0.113") * (entrada + D("2040")) * D("0.0005")
+    assert o.comisiones == D("0.113") * (entrada * D("0.0005") + D("2040") * D("0.0002"))   # taker + maker
     assert o.neto == o.bruto - o.comisiones and r.capital_final == D(500) + o.neto
 
 
@@ -132,6 +132,8 @@ def test_metricas_a_mano():
     assert (m.operaciones, m.ganadoras, m.neto, m.peor_racha) == (5, 2, D(1), 2)
     assert m.tasa_acierto_pct == D(40) and m.factor_beneficio == D("1.25")
     assert m.caida_max_usdt == D(2) and abs(m.caida_max_pct - D(200) / D(102)) < D("1e-20")
+    # ganancia media 2,5 y pérdida media 4/3: empatar exige 4/3 / (2,5 + 4/3) = 34,78 %
+    assert abs(m.acierto_para_empatar_pct - (D(4) / 3) / (D("2.5") + D(4) / 3) * 100) < D("1e-20")
 
 
 def test_informe_avisa_muestra_chica_y_comisiones():
@@ -139,3 +141,8 @@ def test_informe_avisa_muestra_chica_y_comisiones():
     t = informe.texto(r, ["ETHUSDT"], "5m", ["supuesto de prueba"])
     assert "No garantiza resultados futuros" in t and "muy poca muestra" in t
     assert "Las comisiones se llevaron" in t and "Primer tramo" in t and "Tramo final" in t
+
+
+def test_stop_paga_taker_en_la_salida():
+    o = correr_eth(planas(6) + [v(6, l="1975"), v(7)], long_en(5)).operaciones[0]
+    assert o.comisiones == o.cantidad * (o.precio_entrada + o.precio_salida) * D("0.0005")

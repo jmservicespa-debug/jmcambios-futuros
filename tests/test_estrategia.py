@@ -109,3 +109,9 @@ def test_spread_ancho_descarta():
 def test_config_invalida(malo):
     with pytest.raises(ValidationError):
         EstrategiaConfig(**malo)
+
+
+def test_filtro_de_costos_usa_taker_mas_maker_por_tres():
+    cfg = EstrategiaConfig(comision_pct=D("0.3"), comision_maker_pct=D("0.2"))   # 3 × 0,5 % = 1,5 % > objetivo (~0,96 %)
+    s = evaluar("BTCUSDT", tendencia_y_giro(sube=True), cfg)
+    assert s.direccion == NINGUNA and any("3× las comisiones de entrada y salida (0.5 %)" in m for m in s.motivos)

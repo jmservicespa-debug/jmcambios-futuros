@@ -32,12 +32,15 @@ def _consola() -> None:
 def main_historico(argv: list[str] | None = None, cliente: ClienteREST | None = None, dormir=time.sleep) -> int:
     p = argparse.ArgumentParser(prog="futuros-historico", description="Descarga velas históricas (solo lectura).")
     p.add_argument("--dias", type=int, default=90)
+    p.add_argument("--intervalo", default=None, help="ej. 15m (por defecto el de la configuración)")
     p.add_argument("--config", default="config/default.yaml")
     p.add_argument("--db", default=str(alm.RUTA_POR_DEFECTO))
     a = p.parse_args(argv)
     try:
         cfg = load(a.config)
         est, _ = cargar_config(a.config)
+        if a.intervalo:
+            est = est.model_validate({**est.model_dump(), "intervalo": a.intervalo})
     except (ValueError, ValidationError, FileNotFoundError) as e:
         p.error(f"configuración inválida: {e}")
     if not 1 <= a.dias <= 1095:
@@ -77,7 +80,9 @@ def main_backtest(argv: list[str] | None = None, cliente: ClienteREST | None = N
     p.add_argument("--reportes", default="reports")
     p.add_argument("--deslizamiento", default="0.02", help="%% en contra por ejecución a mercado (por defecto 0.02)")
     p.add_argument("--objetivo-neto", default=None, help="cambia el objetivo neto SOLO en esta simulación")
-    p.add_argument("--comision", default=None, help="cambia la comisión por lado (%%) SOLO en esta simulación")
+    p.add_argument("--comision", default=None, help="cambia la comisión taker (%%) SOLO en esta simulación")
+    p.add_argument("--intervalo", default=None, help="ej. 15m: prueba otro intervalo SOLO en esta simulación")
+    p.add_argument("--objetivo-atr", default=None, help="ej. 3: objetivo a N ATR SOLO en esta simulación")
     a = p.parse_args(argv)
     try:
         cfg = load(a.config)
@@ -89,7 +94,13 @@ def main_backtest(argv: list[str] | None = None, cliente: ClienteREST | None = N
             cambios.append(f"objetivo neto {a.objetivo_neto} USDT")
         if a.comision is not None:
             est = est.model_validate({**est.model_dump(), "comision_pct": Decimal(a.comision)})
-            cambios.append(f"comisión {a.comision} % por lado")
+            cambios.append(f"comisión taker {a.comision} %")
+        if a.intervalo is not None:
+            est = est.model_validate({**est.model_dump(), "intervalo": a.intervalo})
+            cambios.append(f"velas de {a.intervalo}")
+        if a.objetivo_atr is not None:
+            est = est.model_validate({**est.model_dump(), "objetivo_atr": Decimal(a.objetivo_atr)})
+            cambios.append(f"objetivo a {a.objetivo_atr} ATR")
     except (ValueError, ValidationError, InvalidOperation, FileNotFoundError) as e:
         p.error(f"configuración o parámetro inválido: {e}")
     _consola()
@@ -99,7 +110,8 @@ def main_backtest(argv: list[str] | None = None, cliente: ClienteREST | None = N
     almacen.close()
     faltan = [s for s, v in series.items() if len(v) < params.ventana + 10]
     if faltan:
-        print(f"No hay velas suficientes de {', '.join(faltan)}. Primero corre: futuros-historico --dias {a.dias}",
+        extra = f" --intervalo {a.intervalo}" if a.intervalo else ""
+        print(f"No hay velas suficientes de {', '.join(faltan)}. Primero corre: futuros-historico --dias {a.dias}{extra}",
               file=sys.stderr)
         return 1
     propio = cliente is None
@@ -120,7 +132,7 @@ def main_backtest(argv: list[str] | None = None, cliente: ClienteREST | None = N
     t0 = time.time()
     res = correr(series, cfg, est, reglas, params)
     notas = [f"entrada en la apertura siguiente con {params.deslizamiento_pct} % de deslizamiento",
-             f"comisión {est.comision_pct} % por lado (taker) en entrada y salida",
+             f"comisión taker {est.comision_pct} % en entrada y stop, maker {est.comision_maker_pct} % en el objetivo",
              "stop antes que objetivo si ambos ocurren en la misma vela",
              "sin filtro de spread (no hay libro histórico) y sin funding",
              f"objetivo neto mínimo {cfg.objetivo_neto_por_operacion_usdt} USDT, riesgo {cfg.riesgo_por_operacion_pct} %, "

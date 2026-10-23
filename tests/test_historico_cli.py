@@ -99,7 +99,15 @@ def test_y_si_no_cambia_la_config(tmp_path, capsys, monkeypatch):
     db = str(tmp_path / "m.sqlite")
     main_historico(["--dias", "3", "--db", db], cliente=mercado([]), dormir=lambda s: None)
     antes = open("config/default.yaml", encoding="utf-8").read()
-    assert main_backtest(["--dias", "3", "--db", db, "--reportes", str(tmp_path), "--objetivo-neto", "0.5"],
+    assert main_backtest(["--dias", "3", "--db", db, "--reportes", str(tmp_path), "--objetivo-neto", "0.5", "--objetivo-atr", "3"],
                          cliente=mercado([])) == 0
-    assert "objetivo neto 0.5 USDT" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "objetivo neto 0.5 USDT" in out and "objetivo a 3 ATR" in out
     assert open("config/default.yaml", encoding="utf-8").read() == antes
+
+
+def test_intervalo_alternativo_solo_en_la_simulacion(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr("time.time", lambda: AHORA_MS / 1000)
+    db = str(tmp_path / "m.sqlite")
+    assert main_backtest(["--dias", "3", "--db", db, "--intervalo", "15m"], cliente=mercado([])) == 1
+    assert "futuros-historico --dias 3 --intervalo 15m" in capsys.readouterr().err

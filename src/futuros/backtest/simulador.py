@@ -3,7 +3,7 @@
 Supuestos (conservadores y escritos aquí para que el informe sea honesto):
 - La estrategia ve las mismas 199 velas cerradas que ve en vivo, y solo en el cierre de cada vela.
 - Una orden aprobada entra en la APERTURA de la vela siguiente, con deslizamiento en contra.
-- Comisión taker en la entrada y en la salida (no se asume comisión maker más barata).
+- Comisión taker en la entrada y en el stop; maker en el objetivo (orden límite que espera en el libro).
 - Si en una misma vela se tocan el stop y el objetivo, se asume que primero se tocó el STOP.
 - Si la vela abre más allá del stop (salto), se sale en la apertura, que es un precio peor que el stop.
 - Las salidas por stop pagan deslizamiento; las del objetivo no, porque se asume una orden límite.
@@ -86,8 +86,8 @@ def _ventana_con_huecos(velas: list[Vela], paso: int) -> list[int]:
 def correr(series: dict[str, list[Vela]], cfg: Config, est: EstrategiaConfig, reglas: dict[str, ReglasSimbolo],
            p: ParametrosBacktest = ParametrosBacktest(),
            generador: Callable[..., Senal] | None = None) -> ResultadoBacktest:
-    motor = MotorRiesgo(cfg, est.comision_pct)
-    com = est.comision_pct / CIEN
+    motor = MotorRiesgo(cfg, est.comision_pct, est.comision_maker_pct)
+    com, com_maker = est.comision_pct / CIEN, est.comision_maker_pct / CIEN
     desl = p.deslizamiento_pct / CIEN
     paso = INTERVALOS_MS[est.intervalo]
     simbolos = sorted(series)
@@ -109,7 +109,8 @@ def correr(series: dict[str, list[Vela]], cfg: Config, est: EstrategiaConfig, re
         nonlocal capital, pnl_dia, pos
         signo = 1 if pos["dir"] == LONG else -1
         bruto = (precio - pos["entrada"]) * pos["cant"] * signo
-        comisiones = pos["cant"] * (pos["entrada"] + precio) * com
+        salida = com_maker if motivo == "objetivo" else com      # objetivo = orden límite (maker)
+        comisiones = pos["cant"] * (pos["entrada"] * com + precio * salida)
         neto = bruto - comisiones
         capital += neto
         pnl_dia += neto
